@@ -1,7 +1,7 @@
 /* add main.c for test ftp 2018.10.1 国庆节 */
 
 
-#inlucde "stdio.h"
+#include "stdio.h"
 
 #define NAME "FTPSearch"
 
