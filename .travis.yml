@@ -2,6 +2,8 @@ language: c
 
 compiler:
   - gcc
+before_install:
+  - make clean
 script: make 
 
 after_script: ./test
