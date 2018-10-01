@@ -3,6 +3,7 @@ language: c
 compiler:
   - gcc
 before_install:
+  - cat makefile
   - make clean
 script: make 
 
