@@ -18,5 +18,6 @@ int main(int argc, char *argv[])
     helpmsg();
     return -1;
   }
-  
+  printf("success exec %s .", NAME);
+  return 0;
 }
