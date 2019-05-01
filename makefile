@@ -1,8 +1,7 @@
 
 
-test : source/main.o 
-	gcc -o test source/main.o 
-main.o : source/main.c
-	gcc -c source/main.c
+ftps : source/main.o source/ftps.o 
+	gcc -o test source/main.c source/ftps.c 
+
 clean :
-	rm -f *.o test source/*o source/test
+	rm -f *.o ftps source/*o source/ftps
