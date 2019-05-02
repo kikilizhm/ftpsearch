@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
     helpmsg();
     return -1;
   }
+  ftpser();
   printf("success exec %s .", NAME);
   return 0;
 }
