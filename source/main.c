@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   if(1 == argc)
   {
     helpmsg();
-    return -1;
+   // return -1;
   }
   ftpser();
   printf("success exec %s .", NAME);

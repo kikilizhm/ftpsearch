@@ -17,6 +17,12 @@ linux 下socket网络编程简例  - 客户端程序
 #include <errno.h>
 //#include <arpa/inet.h>
 
+#include <sys/select.h>
+#include <sys/time.h>
+
+int list_dir(char *dir, int cmd_fd, int data_fd ,FILE* db_fd );
+FILE *save_database(unsigned char *file);
+FILE *open_tmpfile(unsigned char *file);
 
 int connect_ser(unsigned char *ip, unsigned short port)
 {
@@ -43,12 +49,48 @@ int connect_ser(unsigned char *ip, unsigned short port)
     /* 客户端连接服务器，参数依次为socket文件描述符，地址信息，地址结构大小 */
     if(-1 == connect(cfd,(struct sockaddr *)(&c_add), sizeof(struct sockaddr)))
     {
-        printf("connect fail !\r\n");
+        printf("connect fail to ip %s. port %#x.\r\n", ip,port);
         close(cfd);
         return -1;
     }
-    log_write("connect to serverip = %#x, port = %d\r\n",htonl(c_add.sin_addr.s_addr),htons(c_add.sin_port)); /* 这里打印出的是小端*/
+    log_write("connect to serverip = %#x, port = %#x\r\n",htonl(c_add.sin_addr.s_addr),htons(c_add.sin_port)); /* 这里打印出的是小端*/
     return cfd;
+}
+
+int ftp_pasvmode(int cmd_fd, int *pip, unsigned short*pport)
+{
+    unsigned char buffer[64] = {0};
+    unsigned char dataname[6] = {0};
+    int recbytes = 0;
+    char *tmp = NULL;
+
+    if(-1 == (recbytes = write(cmd_fd,"PASV\r\n",6)))
+    {
+        printf("list data fail !\r\n");
+        return -1;
+    }
+
+    /*连接成功,从服务端接收字符*/
+    if(-1 == (recbytes = read(cmd_fd,buffer,64)))
+    {
+        printf("read data fail !\r\n");
+        return -1;
+    }
+
+    buffer[recbytes]='\0';
+    printf("\r\n%s",buffer);
+
+    tmp = (char *)strstr(buffer,"(");
+    if(NULL == tmp) 
+    {
+        printf("pasv mode no reply.(%s)", buffer);
+        return -1;
+    }
+    sscanf(tmp, "(%d,%d,%d,%d,%d,%d)*/", &dataname[0],&dataname[1],&dataname[2],&dataname[3],&dataname[4],&dataname[5]);
+    if(pip) *pip = htonl(*(unsigned int *)&dataname[0]);
+    if(pport) *pport = htons(*(unsigned short*)&dataname[4]);
+    printf("data ip  %#x  %#x==",htonl(*(unsigned int *)&dataname[0]),htons(*(unsigned short*)&dataname[4]));
+    return 0;
 }
  
 int ftpser(void)
@@ -65,8 +107,12 @@ int ftpser(void)
     struct sockaddr_in client ;
     int clientAddrLen = sizeof(client);
     char *tmp = NULL;
+    FILE* fpp_tmp = NULL;
+    FILE* ffp_database = open_tmpfile("databast.dat");
+    int ip = 0;
+    int dataport = 0;
 
-    cfd = connect_ser("192.168.1.103", 2222);
+    cfd = connect_ser("192.168.1.103", 1024);
 
     if(-1 == cfd)
     {
@@ -127,30 +173,11 @@ int ftpser(void)
     buffer[recbytes]='\0';
     printf("%s\r\n",buffer);
 
-    if(-1 == (recbytes = write(cfd,"PASV\r\n",6)))
-    {
-        printf("list data fail !\r\n");
-        return -1;
-    }
+#if 0
 
-    /*连接成功,从服务端接收字符*/
-    if(-1 == (recbytes = read(cfd,buffer,1024)))
-    {
-        printf("read data fail !\r\n");
-        return -1;
-    }
-    printf("read list ok\r\nREC:\r\n");
-
-    buffer[recbytes]='\0';
-    printf("%s\r\n",buffer);
-
-    tmp = (char *)strstr(buffer,"(");
-    printf("%s\r\n",tmp);
-
-    sscanf(tmp, "(%d,%d,%d,%d,%d,%d)*/", &dataname[0],&dataname[1],&dataname[2],&dataname[3],&dataname[4],&dataname[5]);
-    printf("data ip  %#x  %#x==",htonl(*(unsigned int *)&dataname[0]),htons(*(unsigned short*)&dataname[4]));
-
-    cfd_data = connect_ser("192.168.1.103", htons(*(unsigned short*)&dataname[4]) );
+ftp_pasvmode(cfd, &ip, &dataport);
+  
+    cfd_data = connect_ser("192.168.1.103", dataport) );
 
     if(-1 == cfd_data)
     {
@@ -174,16 +201,22 @@ int ftpser(void)
     buffer[recbytes]='\0';
     printf("%s\r\n",buffer);
 
-    /*连接成功,从服务端接收字符*/
-    if(-1 == (recbytes = read(cfd_data,buffer,1024)))
+    fpp_tmp = save_database("list_tmp.txt");
+    if(NULL == fpp_tmp)
     {
-        printf("read data fail !\r\n");
+        log_write("open tmp list file fail.");
         return -1;
     }
-    printf("read list ok\r\nREC:\r\n");
 
-    buffer[recbytes]='\0';
-    printf("%s\r\n",buffer);
+
+#endif
+ftp_pasvmode(cfd, &ip, &dataport);
+
+    printf("database fd %d \r\n", ffp_database);
+     list_dir("/", cfd, dataport, ffp_database);
+
+    /*连接成功,从服务端接收字符*/
+
 
     getchar(); /* 此句为使程序暂停在此处，可以使用netstat查看当前的连接 */
     close(cfd); /* 关闭连接，本次通信完成 */
@@ -193,10 +226,11 @@ int ftpser(void)
 
 
 
+
 FILE *save_database(unsigned char *file)
 {
     FILE *fp = NULL;
-    fp = fopen(file, "w");
+    fp = fopen(file, "w+");
     if(NULL == fp)
     {
         log_write("open database file %s fail.", file);
@@ -205,5 +239,361 @@ FILE *save_database(unsigned char *file)
     return fp;
 }
 
+FILE *open_tmpfile(unsigned char *file)
+{
+    FILE *fp = NULL;
+    fp = fopen(file, "w+");
+    if(NULL == fp)
+    {
+        log_write("open database file %s fail.", file);
+        return NULL;
+    }
+    return fp;
+}
+
+typedef struct tag_LIST_DATA_S
+{
+    char isdir; /*"D or -"*/
+    unsigned char path[256];
+    unsigned char name[256];
+}LIST_DATA_S;
+
+int recv_reply(int fp, FILE* ffp)
+{
+    fd_set rfds;
+    struct timeval timeout = {1,0};
+    char readbuff[10] = {0};
+    char readline[1024] = {0};
+    int ret;
+    char *list_buff = NULL;
+    int len = 0;
+    int line = 0;
+    LIST_DATA_S *plist = NULL;
+    char *tmp = NULL;
+    while(1)
+    {
+        FD_ZERO(&rfds);  /* 清空集合 */
+        FD_SET(fp, &rfds);  /* 将fp添加到集合，后面的FD_ISSET和FD_SET没有必然关系，这里是添加检测 */
+ 
+        ret=select(fp+1, &rfds, NULL, NULL, &timeout);
+        //printf("\r\nselect ret = %d\r\n",ret);
+        if(0 > ret)
+        {
+                return -1;
+        }
+        else if(0 == ret)
+        {
+            break;
+        }
+        else
+        {
+            if(FD_ISSET(fp,&rfds))  /* 这里检测的是fp在集合中是否状态变化，即可以操作。 */
+            {
+                ret = read(fp, readbuff, 9, 0);
+		        if(0 == ret) break;    /* 此处需要检测！否则ftp发送数据时，后面会循环接收到0字节数据 */
+                printf("\r\n%s",readbuff);
+                fputs(readbuff, ffp);
+                memset (readbuff,0,10);
+            }
+        }
+    }
+
+    fseek(ffp, 0, SEEK_END);
+
+    len = ftell(ffp);
+    list_buff = malloc(sizeof(LIST_DATA_S)*5);
+    plist = (struct LIST_DATA_S*)list_buff;
+    if(NULL == plist)
+    {
+        log_write("malloc list buff fail %d.", sizeof(LIST_DATA_S));
+        return -1;
+    }
+    log_write("malloc list buff %d.", len);
+    memset(plist, 0, len);
+    fseek(ffp, 0, SEEK_SET);
+
+    while(NULL != fgets(&readline[0], 1024, ffp)) 
+    {
+        printf("line:%s|",readline);
+        if((readline[0] != 'd') && (NULL == strstr("DIR", &readline[0])))
+        {
+            plist->isdir = 0;
+        }
+        else
+        {
+            plist->isdir = 1;
+        }
+        
+        tmp = strrchr(readline, ' ');
+        
+        tmp += 1;
+        
+        len = 0;
+        if(tmp)
+        {
+            while(('\r' != *(tmp+len)) && ('\n' != *(tmp+len)))
+            {
+                plist->name[len] = *(tmp+len);
+                len += 1;
+            }
+            plist->name[len] = 0;
+            printf("name :%s|\r\n", plist->name);
+        }
+        plist += 1;
+    }
+    return 0;
+}
 
 
+int recv_msg(int fp, FILE* ffp)
+{
+    fd_set rfds;
+    struct timeval timeout = {1,0};
+    char readbuff[100] = {0};
+    char readline[1024] = {0};
+    int ret;
+    char *list_buff = NULL;
+    int len = 0;
+    int line = 0;
+    LIST_DATA_S *plist = NULL;
+    char *tmp = NULL;
+    while(1)
+    {
+        FD_ZERO(&rfds);  /* 清空集合 */
+        FD_SET(fp, &rfds);  /* 将fp添加到集合，后面的FD_ISSET和FD_SET没有必然关系，这里是添加检测 */
+ 
+        ret=select(fp+1, &rfds, NULL, NULL, &timeout);
+        //printf("\r\nselect ret = %d\r\n",ret);
+        if(0 > ret)
+        {
+                return -1;
+        }
+        else if(0 == ret)
+        {
+            break;
+        }
+        else
+        {
+            if(FD_ISSET(fp,&rfds))  /* 这里检测的是fp在集合中是否状态变化，即可以操作。 */
+            {
+                ret = read(fp, readbuff, 99, 0);
+		        if(0 == ret) break;    /* 此处需要检测！否则ftp发送数据时，后面会循环接收到0字节数据 */
+                printf("\r\n%s",readbuff);
+                if(ffp)
+                {
+                    fputs(readbuff, ffp);
+                }
+                
+                memset (readbuff,0,100);
+            }
+        }
+    }
+    return 0;
+}
+
+int sendcmd_replybyfile(int cmd_fd, char *cmd, int *reply_ffd)
+{
+    char buff[32] = {0};
+    int n = 0;
+    FILE *fp = NULL;
+
+    sprintf(buff, "%s_tmpreply.txt\r\n", cmd);
+    fp = open_tmpfile(buff);
+    {
+        log_write("open file %s fail.", buff);
+        return -1;
+    }
+
+    sprintf(buff, "%s\r\n", cmd);
+    if(-1 == (n = write(cmd_fd,buff,strlen(buff))))
+    {
+        log_write("send cmd %s fail.\r\n", cmd);
+        return -1;
+    }
+    if(0 != recv_msg(cmd_fd, fp))
+    {
+        log_write("recv msg fail for cmd %s.", cmd);
+        return -1;
+    }
+    *reply_ffd = fp;
+    return 0;
+}
+
+int sendcmd(int cmd_fd, char *cmd)
+{
+    char buff[512] = {0};
+    int n = 0;
+
+    sprintf(buff, "%s\r\n", cmd);
+    if(-1 == (n = write(cmd_fd,buff,strlen(buff))))
+    {
+        log_write("send cmd %s fail.\r\n", cmd);
+        return -1;
+    }
+    return 0;
+}
+
+/* 
+    1. list 获取list数据
+    2. 格式化list回显数据
+    3. 从第一条数据开始解析，如果时dir则递归，文件则写数据库
+ */
+int list_dir(char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* database_fd)
+{
+    FILE* tmp_datafd = open_tmpfile("list_tmp.txt");
+    char buff[256] = {0};
+    char readline[512] = {0};
+    char nextdir[512] = {0};
+    int line = 0;
+    char *list_buff = NULL;
+    LIST_DATA_S* plist = NULL;
+
+    
+    char *tmp = NULL;
+    int len = 0;
+    int i = 0;
+    int ip = 0;
+    unsigned short dataport = 0;
+
+    int data_fd = 0;
+
+
+    /* send cmd */
+    printf("\r\n list / cwd ");
+
+    sprintf(buff,"CWD %s", dir);
+    if(0 != sendcmd(cmd_fd, buff))
+    {
+        log_write("cd %s fail.", buff);
+        return -1;
+    }
+    (void)recv_msg(cmd_fd, NULL);
+
+    printf("\r\n list / pasv");
+    ftp_pasvmode(cmd_fd, &ip, &dataport);
+
+    printf("\r\n list / list");
+
+    if(0 != sendcmd(cmd_fd, "LIST"))
+    {
+        log_write("list %s fail.", buff);
+        return -1;
+    }
+    (void)recv_msg(cmd_fd, NULL);
+
+    #if 1
+    printf("\r\n list / connect data");
+    data_fd = connect_ser("192.168.1.103", dataport);
+
+    if(-1 == data_fd)
+    {
+        log_write("connect data channel fail.");
+        return -1;
+    }
+    #endif
+printf("\r\n list / rev data");
+    recv_msg(data_fd, tmp_datafd);
+
+    close(data_fd);
+
+
+
+    /* 格式化 */
+    fseek(tmp_datafd, 0, SEEK_SET);
+
+    while(NULL != fgets(&readline[0], 1024, tmp_datafd)) 
+    {
+        line += 1;
+    }
+
+printf("\r\n list / get line %d", line);
+    if(!line) return 0;
+
+    list_buff = malloc(sizeof(LIST_DATA_S)*line);
+    plist = (struct LIST_DATA_S*)list_buff;
+    if(NULL == plist)
+    {
+        log_write("malloc list buff fail %d.", sizeof(LIST_DATA_S));
+        return -1;
+    }
+
+    memset(plist, 0, len);
+    fseek(tmp_datafd, 0, SEEK_SET);
+    line = 0;
+
+    while(NULL != fgets(&readline[0], 1024, tmp_datafd)) 
+    {
+        //printf("line:%s|",readline);
+        if((readline[0] != 'd') && (NULL == strstr("DIR", &readline[0])))
+        {
+            plist->isdir = 0;
+        }
+        else
+        {
+            plist->isdir = 1;
+        }
+        
+        tmp = strrchr(readline, ' ');
+        
+        tmp += 1;
+        
+        len = 0;
+        if(tmp)
+        {
+            while(('\r' != *(tmp+len)) && ('\n' != *(tmp+len)))
+            {
+                plist->name[len] = *(tmp+len);
+                len += 1;
+            }
+            plist->name[len] = 0;
+            printf("name :%s|\r\n", plist->name);
+        }
+        plist += 1;
+        line += 1;
+    }
+    fclose(tmp_datafd);
+
+
+    plist = (struct LIST_DATA_S*)list_buff;
+    for(i=0;i<line;i++)
+    {
+        
+        if(plist->isdir == 0)
+        {
+
+            printf("\r\n list / write file database \r\n");
+            if(0 >  fputs(dir, database_fd))
+            {
+                log_write("write database dir %s fail.(%s %d)",dir, strerror(errno), errno);
+                printf("write database dir %s fail.(%s %d)\r\n",dir, strerror(errno), errno);
+                
+            }
+            if(0 >fputs(",", database_fd))
+            {
+                log_write("write database dir %s fail.",dir);
+                
+            }
+            if(0 > fputs(plist->name, database_fd ))
+            {
+                log_write("write database dir %s fail.",dir);            
+            }
+            if(0 > fputs("\r\n", database_fd))
+            {
+                log_write("write database dir %s fail.",dir);            
+            }
+        }
+        else
+        {
+            
+
+            sprintf(nextdir, "%s/%s", dir,plist->name);
+            printf("\r\n list / next dir[%d][%s]", strlen(nextdir), nextdir);
+            (void)list_dir(nextdir, cmd_fd, data_fd ,database_fd);
+            
+        }
+        plist += 1;
+
+    }
+
+    return 0;
+}
