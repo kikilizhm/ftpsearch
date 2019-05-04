@@ -1,4 +1,4 @@
-ftpsearch
+ftpsearch  ![ci](https://travis-ci.com/kikilizhm/ftpsearch.svg?branch=master "CI")  
 =========
 
 打算使用c语言写一个小型的ftp服务器搜索引擎爬虫，然后供web方式搜索
