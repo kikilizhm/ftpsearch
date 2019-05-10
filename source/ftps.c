@@ -20,6 +20,12 @@ linux 下socket网络编程简例  - 客户端程序
 #include <sys/select.h>
 #include <sys/time.h>
 
+
+#define IP_SERV "192.168.1.103"
+#define PORT_SERV 1024
+#define USERNAME "cx"
+#define PASSWORD "cx"
+
 int list_dir(char *dir, int cmd_fd, int data_fd ,FILE* db_fd );
 FILE *save_database(unsigned char *file);
 FILE *open_tmpfile(unsigned char *file);
@@ -112,7 +118,7 @@ int ftpser(void)
     int ip = 0;
     int dataport = 0;
 
-    cfd = connect_ser("192.168.1.103", 1024);
+    cfd = connect_ser(IP_SERV, PORT_SERV);
 
     if(-1 == cfd)
     {
@@ -133,45 +139,25 @@ int ftpser(void)
         printf("read data fail !\r\n");
         return -1;
     }
-    printf("read ok\r\nREC:\r\n");
+    printf("read welcome msg ok\r\nREC:\r\n");
 
     buffer[recbytes]='\0';
     printf("%s\r\n",buffer);
 
-    if(-1 == (recbytes = write(cfd,"USER cx\r\n",9)))
-    {
-        printf("list data fail !\r\n");
-        return -1;
-    }
 
-    /*连接成功,从服务端接收字符*/
-    if(-1 == (recbytes = read(cfd,buffer,1024)))
-    {
-        printf("read data fail !\r\n");
-        return -1;
-    }
-    printf("read list ok\r\nREC:\r\n");
-    
-    buffer[recbytes]='\0';
-    printf("%s\r\n",buffer);
-    
+	if(0 != sendcmd(cfd, "USER " USERNAME))
+	{
+		return -1;
+	}
+	(void) recv_msg(cfd, NULL);
 
-    if(-1 == (recbytes = write(cfd,"PASS cx\r\n",9)))
-    {
-        printf("list data fail !\r\n");
-        return -1;
-    }
+    if(0 != sendcmd(cfd, "PASS " PASSWORD))
+	{
+		return -1;
+	}
+	(void) recv_msg(cfd, NULL);
 
-    /*连接成功,从服务端接收字符*/
-    if(-1 == (recbytes = read(cfd,buffer,1024)))
-    {
-        printf("read data fail !\r\n");
-        return -1;
-    }
-    printf("read list ok\r\nREC:\r\n");
-    
-    buffer[recbytes]='\0';
-    printf("%s\r\n",buffer);
+
 
 #if 0
 
@@ -292,7 +278,7 @@ int recv_reply(int fp, FILE* ffp)
                 ret = read(fp, readbuff, 9, 0);
 		        if(0 == ret) break;    /* 此处需要检测！否则ftp发送数据时，后面会循环接收到0字节数据 */
                 printf("\r\n%s",readbuff);
-                fputs(readbuff, ffp);
+                if(ffp)fputs(readbuff, ffp);
                 memset (readbuff,0,10);
             }
         }
@@ -348,7 +334,7 @@ int recv_reply(int fp, FILE* ffp)
 int recv_msg(int fp, FILE* ffp)
 {
     fd_set rfds;
-    struct timeval timeout = {1,0};
+    struct timeval timeout = {3,0};
     char readbuff[100] = {0};
     char readline[1024] = {0};
     int ret;
@@ -427,9 +413,10 @@ int sendcmd(int cmd_fd, char *cmd)
     sprintf(buff, "%s\r\n", cmd);
     if(-1 == (n = write(cmd_fd,buff,strlen(buff))))
     {
-        log_write("send cmd %s fail.\r\n", cmd);
+        log_write("send cmd [%s] fail.\r\n", cmd);
         return -1;
     }
+	log_write("send cmd[%s] ok.", cmd);
     return 0;
 }
 
@@ -483,7 +470,7 @@ int list_dir(char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* database_fd)
 
     #if 1
     printf("\r\n list / connect data");
-    data_fd = connect_ser("192.168.1.103", dataport);
+    data_fd = connect_ser(IP_SERV, dataport);
 
     if(-1 == data_fd)
     {
