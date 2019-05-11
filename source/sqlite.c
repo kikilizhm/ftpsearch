@@ -43,9 +43,14 @@ int open_database(char *name)
     }
     if(needcreattable)
     {
+	
+	/*
+	CREATE TABLE CFTPS (ID INTEGER PRIMARY KEY AUTOINCREMENT, DIR NCHAR NOT NULL, NAME NCHAR NOT NULL, SERVER NCHAR);
+	*/
+	
         /* Create SQL statement */
         sql = "CREATE TABLE CFTPS("  \
-                "ID INT PRIMARY KEY     NOT NULL," \
+                "ID INTEGER PRIMARY KEY  AUTOINCREMENT," \
                 "DIR           NCHAR    NOT NULL," \
                 "NAME            NCHAR     NOT NULL," \
                 "SERVER         NCHAR );";
