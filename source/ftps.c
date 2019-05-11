@@ -22,10 +22,10 @@ linux 下socket网络编程简例  - 客户端程序
 
 #include "sqlite.h"
 
-#define IP_SERV "192.168.1.103"
-#define PORT_SERV 1024
-#define USERNAME "cx"
-#define PASSWORD "cx"
+#define IP_SERV "202.38.97.230"
+#define PORT_SERV 21
+#define USERNAME "anonymous"
+#define PASSWORD "lzm@lzu.cn"
 
 int list_dir(char *abs, char *dir, int cmd_fd, int data_fd ,FILE* db_fd );
 FILE *save_database(unsigned char *file);
