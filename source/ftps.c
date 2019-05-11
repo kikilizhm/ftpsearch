@@ -20,13 +20,14 @@ linux 下socket网络编程简例  - 客户端程序
 #include <sys/select.h>
 #include <sys/time.h>
 
+#include "sqlite.h"
 
 #define IP_SERV "192.168.1.103"
 #define PORT_SERV 1024
 #define USERNAME "cx"
 #define PASSWORD "cx"
 
-int list_dir(char *dir, int cmd_fd, int data_fd ,FILE* db_fd );
+int list_dir(char *abs, char *dir, int cmd_fd, int data_fd ,FILE* db_fd );
 FILE *save_database(unsigned char *file);
 FILE *open_tmpfile(unsigned char *file);
 
@@ -198,8 +199,9 @@ ftp_pasvmode(cfd, &ip, &dataport);
 #endif
 ftp_pasvmode(cfd, &ip, &dataport);
 
+    open_database(IP_SERV ".db3");
     printf("database fd %d \r\n", ffp_database);
-     list_dir("/", cfd, dataport, ffp_database);
+     list_dir("/", NULL, cfd, dataport, ffp_database);
 
     /*连接成功,从服务端接收字符*/
 
@@ -247,7 +249,7 @@ typedef struct tag_LIST_DATA_S
 int recv_reply(int fp, FILE* ffp)
 {
     fd_set rfds;
-    struct timeval timeout = {1,0};
+    struct timeval timeout = {3,0};
     char readbuff[10] = {0};
     char readline[1024] = {0};
     int ret;
@@ -425,12 +427,13 @@ int sendcmd(int cmd_fd, char *cmd)
     2. 格式化list回显数据
     3. 从第一条数据开始解析，如果时dir则递归，文件则写数据库
  */
-int list_dir(char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* database_fd)
+int list_dir(char *abs, char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* database_fd)
 {
     FILE* tmp_datafd = open_tmpfile("list_tmp.txt");
     char buff[256] = {0};
     char readline[512] = {0};
     char nextdir[512] = {0};
+	char absdir[512] = {0};
     int line = 0;
     char *list_buff = NULL;
     LIST_DATA_S* plist = NULL;
@@ -446,20 +449,34 @@ int list_dir(char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* database_fd)
 
 
     /* send cmd */
-    printf("\r\n list / cwd ");
+	if(0 == dir)
+	{
+		sprintf(absdir, "%s", abs);
+	}
+	else
+	{
+		if(0 == memcmp(abs, "/", 2))
+		{
+			sprintf(absdir, "%s%s", abs, dir);
+		}
+		else
+		{
+			sprintf(absdir, "%s/%s", abs, dir);
+		}	
+	}	
 
-    sprintf(buff,"CWD %s", dir);
-    if(0 != sendcmd(cmd_fd, buff))
-    {
-        log_write("cd %s fail.", buff);
-        return -1;
-    }
-    (void)recv_msg(cmd_fd, NULL);
+	if(NULL != dir)
+	{
+	    sprintf(buff,"CWD %s", dir);
+	    if(0 != sendcmd(cmd_fd, buff))
+	    {
+	        log_write("cd %s fail.", buff);
+	        return -1;
+	    }
+	    (void)recv_msg(cmd_fd, NULL);
+	}
 
-    printf("\r\n list / pasv");
     ftp_pasvmode(cmd_fd, &ip, &dataport);
-
-    printf("\r\n list / list");
 
     if(0 != sendcmd(cmd_fd, "LIST"))
     {
@@ -492,10 +509,21 @@ printf("\r\n list / rev data");
     {
         line += 1;
     }
-
-printf("\r\n list / get line %d", line);
-    if(!line) return 0;
-
+#if 1
+	printf("\r\n list / get line %d", line);
+    if(!line) 
+	{
+		printf("\r\n dir[%s] has no file.\r\n", absdir);
+		sprintf(buff,"CWD ..");
+	    if(0 != sendcmd(cmd_fd, buff))
+	    {
+	        log_write("cd %s fail.", buff);
+	        return -1;
+	    }
+	    (void)recv_msg(cmd_fd, NULL);
+		return 0;
+	}
+#endif
     list_buff = malloc(sizeof(LIST_DATA_S)*line);
     plist = (struct LIST_DATA_S*)list_buff;
     if(NULL == plist)
@@ -547,13 +575,12 @@ printf("\r\n list / get line %d", line);
         
         if(plist->isdir == 0)
         {
-
+#if 0
             printf("\r\n list / write file database \r\n");
             if(0 >  fputs(dir, database_fd))
             {
                 log_write("write database dir %s fail.(%s %d)",dir, strerror(errno), errno);
-                printf("write database dir %s fail.(%s %d)\r\n",dir, strerror(errno), errno);
-                
+                printf("write database dir %s fail.(%s %d)\r\n",dir, strerror(errno), errno);                
             }
             if(0 >fputs(",", database_fd))
             {
@@ -568,19 +595,36 @@ printf("\r\n list / get line %d", line);
             {
                 log_write("write database dir %s fail.",dir);            
             }
+#endif
+            if(0 != insert_database(absdir, plist->name))
+            {
+                log_write("insert data[%s][%s] fail.", absdir, plist->name);
+                return -1;
+            }
         }
         else
         {
-            
-
-            sprintf(nextdir, "%s/%s", dir,plist->name);
-            printf("\r\n list / next dir[%d][%s]", strlen(nextdir), nextdir);
-            (void)list_dir(nextdir, cmd_fd, data_fd ,database_fd);
-            
+			if((0 == memcmp(plist->name, ".", 2)) || (0 == memcmp(plist->name, "..", 3)))
+			{
+				;
+			}
+			else
+			{
+            //sprintf(nextdir, "%s/%s", dir,plist->name);
+            	printf("\r\n enter next dir[%s][%s]", absdir, plist->name);
+            	(void)list_dir(absdir, plist->name, cmd_fd, data_fd ,database_fd);            
+			}
         }
         plist += 1;
 
     }
+	sprintf(buff,"CWD ..");
+    if(0 != sendcmd(cmd_fd, buff))
+    {
+        log_write("cd %s fail.", buff);
+        return -1;
+    }
+    (void)recv_msg(cmd_fd, NULL);
 
     return 0;
 }

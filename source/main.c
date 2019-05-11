@@ -3,6 +3,8 @@
 
 #include "stdio.h"
 
+#include "sqlite.h"
+
 #define NAME "FTPSearch"
 
 void helpmsg(void)
@@ -13,12 +15,17 @@ void helpmsg(void)
 
 int main(int argc, char *argv[])
 {
-  if(1 == argc)
-  {
-    helpmsg();
-   // return -1;
-  }
+	if(1 == argc)
+	{
+	helpmsg();
+	// return -1;
+	}
+	log_init();
+	log_write("init log compelte.");
+
+	(void) open_database("ftpdata");
   ftpser();
+  log_display();
   printf("success exec %s .", NAME);
   return 0;
 }
