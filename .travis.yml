@@ -7,4 +7,4 @@ before_install:
   - make clean
 script: make 
 
-after_script: ./test
+after_script: ./Cftps
