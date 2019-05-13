@@ -618,6 +618,7 @@ printf("\r\n list / rev data");
         plist += 1;
 
     }
+    free(list_buff);
 	sprintf(buff,"CWD ..");
     if(0 != sendcmd(cmd_fd, buff))
     {
