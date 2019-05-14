@@ -110,20 +110,26 @@ int insert_database(unsigned char *dir,unsigned char *name)
 
 static int select_callback(void *data, int argc, char **argv, char **azColName){
    int i;
-   fprintf(stderr, "%s: ", (const char*)data);
+  // fprintf(stderr, "%s: ", (const char*)data);
+   printf(" <tbody><tr>");
    for(i=0; i<argc; i++){
-      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+     // printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+
+
+    printf(" <td>%s</td>", argv[i] ? argv[i] : "NULL");
+
+
    }
-   printf("\n");
+    printf(" </tr></tbody>");
    return 0;
 }
 
-int select_database(unsigned char dir, unsigned char* name)
+int select_database(unsigned char* dir, unsigned char* name)
 {
    sqlite3 *db;
    char *zErrMsg = 0;
    int rc;
-   char *sql;
+   char sql[1024] = {0};
    const char* data = "Callback function called";
 
    /* Open database
@@ -136,7 +142,7 @@ int select_database(unsigned char dir, unsigned char* name)
    } */
 
    /* Create SQL statement */
-   sql = "SELECT * from CFTPS";
+   sprintf(&sql[0],"SELECT * from CFTPS where \'NAME\' like \'%%%s%%\' limit 20;", name );
 
    /* Execute SQL statement */
    rc = sqlite3_exec(g_db, sql, select_callback, (void*)data, &zErrMsg);
@@ -144,7 +150,7 @@ int select_database(unsigned char dir, unsigned char* name)
       fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
    }else{
-      fprintf(stdout, "Operation done successfully\n");
+      //fprintf(stdout, "Operation done successfully\n");
    }
    return 0;
 }
