@@ -143,7 +143,7 @@ int select_database(unsigned char* dir, unsigned char* name)
 
    /* Create SQL statement */
    sprintf(&sql[0],"SELECT * from CFTPS where \'NAME\' like \'%%%s%%\' limit 20;", name );
-
+   printf("[sql=%s]",sql);
    /* Execute SQL statement */
    rc = sqlite3_exec(g_db, sql, select_callback, (void*)data, &zErrMsg);
    if( rc != SQLITE_OK ){
