@@ -10,7 +10,7 @@ int main(void)
 {
     printf("Content-Type: text/html\n\n");
     printf("<html><head>");
-    printf("<meta charset=\"UTF-8\">");
+    printf("<meta charset=\"gbk\">");
     printf("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
     printf("<title>FTP Search</title>");
     printf("<link rel=\"stylesheet\" href=\"/main.css\"></head>");
