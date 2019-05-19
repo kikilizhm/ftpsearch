@@ -7,7 +7,7 @@ body {
     padding: 0;
     background: #494A5F;
     font-weight: 500;
-    font-family: "Microsoft YaHei","å®‹ä½“","Segoe UI", "Lucida Grande", Helvetica, Arial,sans-serif, FreeSans, Arimo;
+    font-family: "Microsoft YaHei","ËÎÌå","Segoe UI", "Lucida Grande", Helvetica, Arial,sans-serif, FreeSans, Arimo;
 }
 */
 #container {
@@ -42,7 +42,7 @@ button {
 }
 
 
-/*æœç´¢æ¡†6*/
+/*ËÑË÷¿ò6*/
 .bar6 {background: rgb(255, 255, 255);}
 .bar6 input {
     border: 2px solid #98d7eb;
@@ -59,7 +59,7 @@ button {
     right: 0;
 }
 .bar6 button:before {
-    content: "æœç´¢";
+    content: "ËÑË÷";
     font-size: 14px;
     color: rgb(255, 255, 255);
 }
@@ -97,7 +97,7 @@ h1,h2,h3{
 		.title th, .title td { border: 1px solid #CAD9EA; padding: 5px; }
  
  
-/*è¿™ä¸ªæ˜¯å€Ÿé‰´ä¸€ä¸ªè®ºå›çš„æ ·å¼*/
+/*Õâ¸öÊÇ½è¼øÒ»¸öÂÛÌ³µÄÑùÊ½*/
 table.t1{
 	border:1px solid #cad9ea;
 	color:#666;
