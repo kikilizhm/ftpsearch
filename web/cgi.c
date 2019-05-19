@@ -74,7 +74,7 @@ void html_body(void)
     printf("<div id=\"container\">");
     printf("<div class=\"search bar6\">");
         printf("<form method=\"POST\" action=\"\">");
-        printf("<input name=str type=\"text\" placeholder=\"è¯·è¾“å…¥æ‚¨è¦æœç´¢çš„å†…å®¹...\">");
+        printf("<input name=str type=\"text\" placeholder=\"ÇëÊäÈëÄúÒªËÑË÷µÄÄÚÈÝ...\">");
         printf("<button type=\"submit\"></button>");
         printf("    </form>  </div>  </div> ");
 
