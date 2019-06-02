@@ -19,7 +19,7 @@ linux 下socket网络编程简例  - 客户端程序
 
 #include <sys/select.h>
 #include <sys/time.h>
-
+#include "sqlite3.h"
 #include "sqlite.h"
 
 #define IP_SERV "202.38.97.230"
@@ -30,6 +30,8 @@ linux 下socket网络编程简例  - 客户端程序
 int list_dir(char *abs, char *dir, int cmd_fd, int data_fd ,FILE* db_fd );
 FILE *save_database(unsigned char *file);
 FILE *open_tmpfile(unsigned char *file);
+
+sqlite3 *g_db = NULL;
 
 int connect_ser(unsigned char *ip, unsigned short port)
 {
@@ -199,7 +201,7 @@ ftp_pasvmode(cfd, &ip, &dataport);
 #endif
 ftp_pasvmode(cfd, &ip, &dataport);
 
-    open_database(IP_SERV ".db3");
+    g_db = open_database(IP_SERV ".db3");
     printf("database fd %d \r\n", ffp_database);
      list_dir("/", NULL, cfd, dataport, ffp_database);
 
@@ -462,8 +464,8 @@ int list_dir(char *abs, char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* datab
 		else
 		{
 			sprintf(absdir, "%s/%s", abs, dir);
-		}	
-	}	
+		}
+	}
 
 	if(NULL != dir)
 	{
@@ -495,7 +497,7 @@ int list_dir(char *abs, char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* datab
         return -1;
     }
     #endif
-printf("\r\n list / rev data");
+    printf("\r\n list / rev data");
     recv_msg(data_fd, tmp_datafd);
 
     close(data_fd);
@@ -575,27 +577,7 @@ printf("\r\n list / rev data");
         
         if(plist->isdir == 0)
         {
-#if 0
-            printf("\r\n list / write file database \r\n");
-            if(0 >  fputs(dir, database_fd))
-            {
-                log_write("write database dir %s fail.(%s %d)",dir, strerror(errno), errno);
-                printf("write database dir %s fail.(%s %d)\r\n",dir, strerror(errno), errno);                
-            }
-            if(0 >fputs(",", database_fd))
-            {
-                log_write("write database dir %s fail.",dir);
-                
-            }
-            if(0 > fputs(plist->name, database_fd ))
-            {
-                log_write("write database dir %s fail.",dir);            
-            }
-            if(0 > fputs("\r\n", database_fd))
-            {
-                log_write("write database dir %s fail.",dir);            
-            }
-#endif
+
             if(0 != insert_database(absdir, plist->name))
             {
                 log_write("insert data[%s][%s] fail.", absdir, plist->name);

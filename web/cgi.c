@@ -22,10 +22,10 @@ int main(void)
 }
 #define IP_SERV "202.38.97.230"
 
-
+int select_callback(void *data, int argc, char **argv, char **azColName);
 int open_database(char *name);
 int insert_database(unsigned char *dir,unsigned char *name);
-int select_database(unsigned char *dir, unsigned char* name);
+int select_database(unsigned char *dir, unsigned char* name, void *callback);
 void close_database(void);
 void dis_rest(void)
 {
@@ -56,7 +56,7 @@ void dis_rest(void)
             (void)open_database(IP_SERV ".db3");
         printf("      <table   width=\"90%%\" id=\"mytab\"  border=\"1\" class=\"t1\"><thead><tr  class=\"a1\"><td>ID</td><td>DIR</td><td>NAME</td><td></td></tr></thead>");
 
-        (void)select_database(str, str);
+        (void)select_database(str, str, select_callback);
         close_database();
         printf("</table>");
         }        

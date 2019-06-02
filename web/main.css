@@ -54,12 +54,12 @@ button {
 .bar6 button {
     background: #98d7eb;
     border-radius: 0 5px 5px 0;
-    width: 60px;
+    width: 80px;
     top: 0;
     right: 0;
 }
 .bar6 button:before {
-    content: "ËÑË÷";
+    content: "ÎÄ¼þËÑË÷";
     font-size: 14px;
     color: rgb(255, 255, 255);
 }
