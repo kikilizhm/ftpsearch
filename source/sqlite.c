@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "sqlite3.h"
 
+#include "ftps.h"
 
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
    int i;
@@ -18,7 +19,7 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
    printf("\n");
    return 0;
 }
-int open_database(char *name)
+sqlite3 * open_database(char *name)
 {
    char *zErrMsg = 0;
    int rc;
@@ -29,7 +30,7 @@ int open_database(char *name)
     if(NULL == name)
     {
         log_write("open database name null.");
-        return -1;
+        return NULL;
     }
     if(0 != access(name, F_OK|W_OK))
     {
@@ -40,7 +41,7 @@ int open_database(char *name)
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
       exit(0);
    }else{
-        fprintf(stderr, "Opened database successfully\n");
+        fprintf(stderr, "Opened database [%s] successfully\n", name);
     }
     if(needcreattable)
     {
@@ -95,7 +96,8 @@ sqlite3 * open_servdatabase(char *name)
     if(needcreattable)
     {
         /* Create SQL statement */
-        sql = "CREATE TABLE server (sid INTEGER PRIMARY KEY ASC AUTOINCREMENT, ip CHAR (20) NOT NULL, port INT (6) NOT NULL, sdisc CHAR);";
+        //sql = "CREATE TABLE server (sid INTEGER PRIMARY KEY ASC AUTOINCREMENT, ip CHAR (20) NOT NULL, port INT (6) NOT NULL, sdisc CHAR);";
+        sql = "CREATE TABLE server (sid INTEGER PRIMARY KEY ASC AUTOINCREMENT, ip CHAR (20) NOT NULL, port CHAR (6) NOT NULL, sdisc CHAR, user CHAR, password);";
 
         /* Execute SQL statement */
         rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
@@ -136,7 +138,13 @@ int insert_database(sqlite3 *db, unsigned char *dir,unsigned char *name)
 
    /* Create SQL statement */
    //sql = "INSERT INTO CFTPS (ID,DIR,NAME,SERVER) VALUES (NULL, 'Paul', 'namess', 'California'); " ;
+   if(db == NULL)
+   {
+      printf("fun %s db is null.\r\n", __FUNCTION__);
+      return -1;
+   }
    sprintf(sql, "INSERT INTO CFTPS (ID,DIR,NAME,SERVER) VALUES (NULL, '%s', '%s', 'serv'); " ,dir, name);
+   printf("sql:[%s]\r\n", sql);
 
    /* Execute SQL statement */
    rc = sqlite3_exec(db, &sql[0], insert_callback, 0, &zErrMsg);
@@ -150,7 +158,7 @@ int insert_database(sqlite3 *db, unsigned char *dir,unsigned char *name)
    return rc;
 }
 
-int insertserv_database(sqlite3 *db, unsigned char *ip,unsigned char *port)
+int insertserv_database(sqlite3 *db, FTPSERVER_S*s)
 {
    
    char *zErrMsg = 0;
@@ -168,7 +176,8 @@ int insertserv_database(sqlite3 *db, unsigned char *ip,unsigned char *port)
 
    /* Create SQL statement */
    //sql = "INSERT INTO CFTPS (ID,DIR,NAME,SERVER) VALUES (NULL, 'Paul', 'namess', 'California'); " ;
-   sprintf(sql, "INSERT INTO server (sid,ip,port,sdisc) VALUES (NULL, '%s', '%s', 'serv'); " ,ip, port);
+   sprintf(sql, "INSERT INTO server (sid,ip,port,user,password,sdisc) VALUES (NULL, '%s', '%s','%s', '%s', '%s'); " \
+    ,s->ip, s->port, s->user, s->password, s->desc);
 
    /* Execute SQL statement */
    rc = sqlite3_exec(db, &sql[0], insert_callback, 0, &zErrMsg);
@@ -222,17 +231,6 @@ int select_callback(void *data, int argc, char **argv, char **azColName){
    return 0;
 }
 
-int listserv_callback(void *data, int argc, char **argv, char **azColName){
-   int i;
-  // fprintf(stderr, "%s: ", (const char*)data);
-   //printf(" <tbody><tr>");
-   for(i=0; i<argc; i++){
-      printf("%s ", argv[i] ? argv[i] : "NULL");
-    //printf("%s ",  "NULL");
-   }
-    printf(" \n");
-   return 0;
-}
 
 int select_database(sqlite3* db, unsigned char* dir, unsigned char* name, void *callback)
 {
@@ -265,6 +263,19 @@ int select_database(sqlite3* db, unsigned char* dir, unsigned char* name, void *
    return 0;
 }
 
+int listserv_callback(void *data, int argc, char **argv, char **azColName){
+   int i;
+  // fprintf(stderr, "%s: ", (const char*)data);
+   //printf(" <tbody><tr>");
+   for(i=0; i<argc; i++){
+      printf("%s ", argv[i] ? argv[i] : "NULL");
+    //printf("%s ",  "NULL");
+   }
+    printf(" \n");
+   return 0;
+}
+
+
 int listser_database(sqlite3 *db, void *callback)
 {
    char *zErrMsg = 0;
@@ -280,7 +291,7 @@ int listser_database(sqlite3 *db, void *callback)
    
    printf("[sql=%s]\r\n",sql);
    /* Execute SQL statement */
-   rc = sqlite3_exec(db, sql, listserv_callback, data, &zErrMsg);
+   rc = sqlite3_exec(db, sql, callback, data, &zErrMsg);
 
    if( rc != SQLITE_OK ){
       fprintf(stderr, "SQL error: %s\n", zErrMsg);

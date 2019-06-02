@@ -20,12 +20,11 @@ linux 下socket网络编程简例  - 客户端程序
 #include <sys/select.h>
 #include <sys/time.h>
 #include "sqlite3.h"
-#include "sqlite.h"
 
-#define IP_SERV "202.38.97.230"
-#define PORT_SERV 21
-#define USERNAME "anonymous"
-#define PASSWORD "lzm@lzu.cn"
+
+#include "ftps.h"
+
+#include "sqlite.h"
 
 int list_dir(char *abs, char *dir, int cmd_fd, int data_fd ,FILE* db_fd );
 FILE *save_database(unsigned char *file);
@@ -87,7 +86,7 @@ int ftp_pasvmode(int cmd_fd, int *pip, unsigned short*pport)
     }
 
     buffer[recbytes]='\0';
-    printf("\r\n%s",buffer);
+    printf("\r\n%s\r\n",buffer);
 
     tmp = (char *)strstr(buffer,"(");
     if(NULL == tmp) 
@@ -101,8 +100,9 @@ int ftp_pasvmode(int cmd_fd, int *pip, unsigned short*pport)
     printf("data ip  %#x  %#x==",htonl(*(unsigned int *)&dataname[0]),htons(*(unsigned short*)&dataname[4]));
     return 0;
 }
- 
-int ftpser(void)
+
+
+int ftpSearchEngine(FTPSERVER_S*s)
 {
     int cfd = 0; /* 文件描述符 */
     int cfd_data = 0;
@@ -116,12 +116,36 @@ int ftpser(void)
     struct sockaddr_in client ;
     int clientAddrLen = sizeof(client);
     char *tmp = NULL;
-    FILE* fpp_tmp = NULL;
-    FILE* ffp_database = open_tmpfile("databast.dat");
-    int ip = 0;
+    //FILE* fpp_tmp = NULL;
+    //FILE* ffp_database = open_tmpfile("databast.dat");
     int dataport = 0;
 
-    cfd = connect_ser(IP_SERV, PORT_SERV);
+    unsigned char *ip = NULL;
+    unsigned int port = 0;
+    unsigned char *user = NULL;
+    unsigned char *password = NULL;
+    unsigned char cmdbuff[80] = {0};
+
+    if(s == NULL)
+    {
+        printf("para s is null.\r\n");
+        return -1;
+    }
+    ip = s->ip;
+    port = atoi(s->port);
+    if(NULL == s->user || NULL == s->password)
+    {
+        user = "anonymous";
+        password = "anonymous@anonymous.anonymous";
+    }
+    else
+    {
+        /* code */
+        user = s->user;
+        password = s->password;
+    }
+
+    cfd = connect_ser(ip, port);
 
     if(-1 == cfd)
     {
@@ -147,75 +171,35 @@ int ftpser(void)
     buffer[recbytes]='\0';
     printf("%s\r\n",buffer);
 
-
-	if(0 != sendcmd(cfd, "USER " USERNAME))
+    sprintf(cmdbuff, "USER %s", user);
+	if(0 != sendcmd(cfd, cmdbuff))
+	{
+		return -1;
+	}
+	(void) recv_msg(cfd, NULL);
+    sprintf(cmdbuff, "PASS %s",password);
+    if(0 != sendcmd(cfd, cmdbuff))
 	{
 		return -1;
 	}
 	(void) recv_msg(cfd, NULL);
 
-    if(0 != sendcmd(cfd, "PASS " PASSWORD))
-	{
-		return -1;
-	}
-	(void) recv_msg(cfd, NULL);
+    ftp_pasvmode(cfd, &ip, &dataport);
 
-
-
-#if 0
-
-ftp_pasvmode(cfd, &ip, &dataport);
-  
-    cfd_data = connect_ser("192.168.1.103", dataport) );
-
-    if(-1 == cfd_data)
+    g_db = open_database(DATABASE_NAME ".db3");
+    if(NULL == g_db)
     {
+        printf("open database fail.\r\n");
         return -1;
     }
 
-    if(-1 == (recbytes = write(cfd,"LIST\r\n",6)))
-    {
-        printf("list data fail !\r\n");
-        return -1;
-    }
+    list_dir("/", NULL, cfd, dataport, NULL);
 
-    /*连接成功,从服务端接收字符*/
-    if(-1 == (recbytes = read(cfd,buffer,1024)))
-    {
-        printf("read data fail !\r\n");
-        return -1;
-    }
-    printf("read list ok\r\nREC:\r\n");
-
-    buffer[recbytes]='\0';
-    printf("%s\r\n",buffer);
-
-    fpp_tmp = save_database("list_tmp.txt");
-    if(NULL == fpp_tmp)
-    {
-        log_write("open tmp list file fail.");
-        return -1;
-    }
-
-
-#endif
-ftp_pasvmode(cfd, &ip, &dataport);
-
-    g_db = open_database(IP_SERV ".db3");
-    printf("database fd %d \r\n", ffp_database);
-     list_dir("/", NULL, cfd, dataport, ffp_database);
-
-    /*连接成功,从服务端接收字符*/
-
-
-    getchar(); /* 此句为使程序暂停在此处，可以使用netstat查看当前的连接 */
-    close(cfd); /* 关闭连接，本次通信完成 */
+    close(cfd);
+    close_database(g_db);
     return 0;
 
 }
-
-
-
 
 FILE *save_database(unsigned char *file)
 {
@@ -489,7 +473,8 @@ int list_dir(char *abs, char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* datab
 
     #if 1
     printf("\r\n list / connect data");
-    data_fd = connect_ser(IP_SERV, dataport);
+    sprintf(buff, "%d.%d.%d.%d", (ip>>24)&0xff, (ip>>16)&0xff, (ip>>8)&0xff, ip&0xff);
+    data_fd = connect_ser(buff, dataport);
 
     if(-1 == data_fd)
     {
@@ -578,7 +563,7 @@ int list_dir(char *abs, char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* datab
         if(plist->isdir == 0)
         {
 
-            if(0 != insert_database(absdir, plist->name))
+            if(0 != insert_database(g_db, absdir, plist->name))
             {
                 log_write("insert data[%s][%s] fail.", absdir, plist->name);
                 return -1;
@@ -594,7 +579,7 @@ int list_dir(char *abs, char *dir, int cmd_fd, int /*data_fd*/nused ,FILE* datab
 			{
             //sprintf(nextdir, "%s/%s", dir,plist->name);
             	printf("\r\n enter next dir[%s][%s]", absdir, plist->name);
-            	(void)list_dir(absdir, plist->name, cmd_fd, data_fd ,database_fd);            
+            	(void)list_dir(absdir, plist->name, cmd_fd, data_fd ,NULL);            
 			}
         }
         plist += 1;
