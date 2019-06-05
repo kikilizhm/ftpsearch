@@ -5,6 +5,8 @@ compiler:
 before_install:
   - cat makefile
   - make clean
-script: make 
+  - cat build.sh
+script: build.sh
 
-after_script: ./Cftps
+after_script: 
+  - ./Cftps ls
