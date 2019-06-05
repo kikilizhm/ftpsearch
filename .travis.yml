@@ -6,7 +6,7 @@ before_install:
   - cat makefile
   - make clean
   - cat build.sh
-script: build.sh
+script: ./build.sh
 
 after_script: 
   - ./Cftps ls
