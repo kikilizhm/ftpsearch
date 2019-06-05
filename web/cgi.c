@@ -1,11 +1,13 @@
 #include <stdio.h>
  #include <stdlib.h>
-
+#include <unistd.h>
 #include <string.h>  
-
+#include "../source/sqlite3.h"
+#include "../source/ftps.h"
+#include "../source/sqlite.h"
  void html_body(void);
  void html_foot(void);
-
+sqlite3 *g_gb = 0;
 int main(void)
 {
     printf("Content-Type: text/html\n\n");
@@ -20,13 +22,8 @@ int main(void)
     html_foot();
     
 }
-#define IP_SERV "202.38.97.230"
 
-int select_callback(void *data, int argc, char **argv, char **azColName);
-int open_database(char *name);
-int insert_database(unsigned char *dir,unsigned char *name);
-int select_database(unsigned char *dir, unsigned char* name, void *callback);
-void close_database(void);
+
 void dis_rest(void)
 {
     int len;
@@ -53,11 +50,17 @@ void dis_rest(void)
                 return ;
             }
 
-            (void)open_database(IP_SERV ".db3");
+            if(0 != access(DATABASE_NAME, F_OK|W_OK))
+            {
+                printf("no data\r\n\r\n");
+                return ;
+            }
+
+            g_gb = open_database(DATABASE_NAME );
         printf("      <table   width=\"90%%\" id=\"mytab\"  border=\"1\" class=\"t1\"><thead><tr  class=\"a1\"><td>ID</td><td>DIR</td><td>NAME</td><td></td></tr></thead>");
 
-        (void)select_database(str, str, select_callback);
-        close_database();
+        (void)select_database(g_gb, str, str, select_callback);
+        close_database(g_gb);
         printf("</table>");
         }        
     }

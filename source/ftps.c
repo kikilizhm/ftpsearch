@@ -186,7 +186,7 @@ int ftpSearchEngine(FTPSERVER_S*s)
 
     ftp_pasvmode(cfd, &ip, &dataport);
 
-    g_db = open_database(DATABASE_NAME ".db3");
+    g_db = open_database(DATABASE_NAME);
     if(NULL == g_db)
     {
         printf("open database fail.\r\n");

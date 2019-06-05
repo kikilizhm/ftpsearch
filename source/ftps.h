@@ -13,4 +13,4 @@ typedef struct tag_FTPSERVER_S
 //#define USERNAME "anonymous"
 //#define PASSWORD "lzm@lzu.cn"
 
-#define DATABASE_NAME "202.38.97.230"
+#define DATABASE_NAME "data.db3"
