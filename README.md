@@ -2,7 +2,9 @@ ftpsearch  ![ci](https://travis-ci.com/kikilizhm/ftpsearch.svg?branch=master "CI
 =========
 
 c语言写一个小型的ftp服务器搜索引擎爬虫，然后供web方式搜索
+
 爬虫：C语言socket+sqlite3本地数据库
+
 web server：boa + C语言cgi + sqlite3数据库
 
 构建：
