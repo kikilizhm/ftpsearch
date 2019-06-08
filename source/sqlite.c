@@ -137,13 +137,12 @@ int insert_database(sqlite3 *db, unsigned char *dir,unsigned char *name)
    } */
 
    /* Create SQL statement */
-   sprintf(sql,"INSERT INTO CFTPS (ID,DIR,NAME,SERVER) VALUES (NULL, 'Paul', 'namess', 'California'); " );
    if(db == NULL)
    {
       printf("fun %s db is null.\r\n", __FUNCTION__);
       return -1;
    }
-   //sprintf(sql, "INSERT INTO CFTPS (ID,DIR,NAME,SERVER) VALUES (NULL, '%s', '%s', 'serv'); " ,dir, name);
+   sprintf(sql, "INSERT INTO CFTPS (ID,DIR,NAME,SERVER) VALUES (NULL, '%s', '%s', 'serv'); " ,dir, name);
    printf("sql:[%s]\r\n", sql);
 
    /* Execute SQL statement */
