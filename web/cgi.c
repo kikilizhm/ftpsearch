@@ -38,7 +38,7 @@ void dis_rest(void)
         http_buf=(char *)malloc(len+1);
         memset((char *)http_buf,0x0,len+1);
         fgets((char *)http_buf,len+1,stdin);
-        printf("[%s]\r\n",http_buf);
+        //printf("[%s]\r\n",http_buf);
 
         str = strstr(http_buf,"=");
         if(str)

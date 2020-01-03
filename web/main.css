@@ -7,7 +7,7 @@ body {
     padding: 0;
     background: #494A5F;
     font-weight: 500;
-    font-family: "Microsoft YaHei","宋体","Segoe UI", "Lucida Grande", Helvetica, Arial,sans-serif, FreeSans, Arimo;
+    font-family: "Microsoft YaHei","????","Segoe UI", "Lucida Grande", Helvetica, Arial,sans-serif, FreeSans, Arimo;
 }
 */
 #container {
@@ -42,7 +42,7 @@ button {
 }
 
 
-/*搜索框6*/
+/*??????6*/
 .bar6 {background: rgb(255, 255, 255);}
 .bar6 input {
     border: 2px solid #98d7eb;
@@ -59,13 +59,21 @@ button {
     right: 0;
 }
 .bar6 button:before {
-    content: "文件搜索";
+    content: "FileSearch";
     font-size: 14px;
     color: rgb(255, 255, 255);
 }
 
 
 
+.footer{
+	position: absolute;
+    height: 50px;
+    text-align: center;
+    line-height: 50px;
+	width: 100%;
+	bottom: 0;
+}
 
 
 
@@ -97,7 +105,7 @@ h1,h2,h3{
 		.title th, .title td { border: 1px solid #CAD9EA; padding: 5px; }
  
  
-/*这个是借鉴一个论坛的样式*/
+/*??????????????????*/
 table.t1{
 	border:1px solid #cad9ea;
 	color:#666;
