@@ -11,4 +11,9 @@ lib : lib/sqlite3/sqlite3.o lib/Clog/Clog.o
 	mv liblib.a lib/
 
 clean :
-	rm -f *.o Cftps source/*o web/*.o web/cgi-bin/* source/Cftps
+	rm -f lib/sqlite3/*.o
+	rm -f lib/Clog/*.o
+	rm -f lib/*.a
+	rm -f source/*.o
+	rm -f web/*.o
+	rm -f *.o Cftps web/cgi-bin/* source/Cftps 
