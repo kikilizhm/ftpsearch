@@ -16,8 +16,8 @@ void helpmsg(void)
   printf("Usage: %s <operation> [options]\r\n", NAME);
 	printf("Operations:\r\n \
 	ls -- list ftp server info\r\n  \
-	add -- add ftp server\r\n \
-	del -- del ftp server\r\n \
+	add <ip:port> -- add ftp server\r\n \
+	del <server_id> -- del ftp server\r\n \
 	help -- echo help info\r\n \
 	search --  spider all server from server database");
   return ;
@@ -114,7 +114,7 @@ void server_del(char *ops)
 	char *desc;
 	if(ops == NULL)
 	{
-		printf("no ip info(cmd del server_id).\r\n");
+		printf("Useage:Cftps del server_id.\r\n");
 		return;
 	}
 	db = open_servdatabase("ftpserver.db3");

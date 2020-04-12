@@ -12,7 +12,7 @@ int main(void)
 {
     printf("Content-Type: text/html\n\n");
     printf("<html><head>");
-    printf("<meta charset=\"gbk\">");
+    printf("<meta charset=\"utf-8\">");
     printf("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
     printf("<title>FTP Search</title>");
     printf("<link rel=\"stylesheet\" href=\"/main.css\"></head>");
@@ -77,7 +77,7 @@ void html_body(void)
     printf("<div id=\"container\">");
     printf("<div class=\"search bar6\">");
         printf("<form method=\"POST\" action=\"\">");
-        printf("<input name=str type=\"text\" placeholder=\"ÇëÊäÈëÄúÒªËÑË÷µÄÄÚÈİ...\">");
+        printf("<input name=str type=\"text\" placeholder=\"è¯·è¾“å…¥å­—ç¬¦...\">");
         printf("<button type=\"submit\"></button>");
         printf("    </form>  </div>  </div> ");
 
@@ -86,6 +86,7 @@ void html_body(void)
 
 void html_foot(void)
 {
-
+    printf("<div class=\"footer\">");
+    printf("&copy;2019-2020 kikilizhm.com ç‰ˆæƒæ‰€æœ‰ <a href=\"http://www.beian.miit.gov.cn\">è‹ICPå¤‡19068650å·</a></div>");
     printf("      </body></html>");
 }
